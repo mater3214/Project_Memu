@@ -21,7 +21,6 @@ export type LineStateStep =
   | 'ADDING_DESC' 
   | 'ADDING_LOC' 
   | 'ADDING_TIME' 
-  | 'ADDING_PRIORITY' 
   | 'ASK_TEMPLATE';
 
 export interface LineState {
@@ -41,6 +40,8 @@ export interface Todo {
   priority: TodoPriority;
   status: TodoStatus;
   points_reward: number;
+  is_important: boolean;
+  completed_at?: string;
   is_notified: boolean;
   created_at: string;
 }
@@ -53,7 +54,18 @@ export interface TodoTemplate {
   location?: string;
   priority: TodoPriority;
   points_reward: number;
+  is_important: boolean;
   created_at: string;
+}
+
+export interface Note {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  points_reward: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TodoLog {
@@ -77,6 +89,11 @@ export interface DashboardStats {
   completed: number;
   pending: number;
   totalPoints: number;
+  noteCount: number;
+  notePoints: number;
+  importantCompleted: number;
+  importantOnTime: number;
+  importantLate: number;
 }
 
 export interface UserProfile {

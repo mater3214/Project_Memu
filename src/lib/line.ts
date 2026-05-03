@@ -116,7 +116,6 @@ export function detailsOptionsFlex() {
         { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "📝 รายละเอียด", text: "รายละเอียด" } },
         { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "📍 สถานที่", text: "สถานที่" } },
         { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "⏰ เวลา", text: "เวลา" } },
-        { type: "button", style: "secondary", height: "sm", action: { type: "message", label: "⭐ ความสำคัญ", text: "ความสำคัญ" } },
         { type: "button", style: "primary", color: "#10b981", action: { type: "message", label: "✅ ตกลง (บันทึกเลย)", text: "ตกลง" } },
         { type: "button", style: "link", color: "#ef4444", action: { type: "message", label: "❌ ยกเลิก", text: "ยกเลิก" } }
       ]
@@ -296,7 +295,7 @@ export function welcomeFlex(displayName: string) {
       type: "box",
       layout: "vertical",
       contents: [
-        { type: "text", text: "Todolish", weight: "bold", size: "xl", color: "#6366f1" },
+        { type: "text", text: "Harnkhm Lab", weight: "bold", size: "xl", color: "#6366f1" },
         { type: "text", text: `ยินดีต้อนรับ ${displayName}!`, size: "md", margin: "md", wrap: true },
         { type: "separator", margin: "lg" },
         { type: "text", text: "กรุณาสมัครสมาชิกก่อนใช้งาน", size: "sm", color: "#666666", margin: "lg", wrap: true },
@@ -352,7 +351,7 @@ export function menuFlex() {
       contents: [
         {
           type: "text",
-          text: "📚 คู่มือการใช้งาน Todolish",
+          text: "📚 คู่มือการใช้งาน Harnkhm Lab",
           weight: "bold",
           size: "xl",
           color: "#6366f1",
@@ -364,7 +363,7 @@ export function menuFlex() {
         },
         {
           type: "text",
-          text: "✨ วิธีเพิ่มรายการ (แบบง่าย)",
+          text: "✨ วิธีเพิ่มรายการ",
           weight: "bold",
           size: "sm",
           color: "#16a34a",
@@ -372,7 +371,7 @@ export function menuFlex() {
         },
         {
           type: "text",
-          text: "พิมพ์ 'เพิ่ม' ตามด้วยชื่อ ระบบจะให้กดเลือกความสำคัญได้เลย",
+          text: "พิมพ์ 'เพิ่ม' ตามด้วยชื่อ ระบบจะเพิ่มรายการและให้คะแนน 20 pts อัตโนมัติ",
           size: "xs",
           color: "#666666",
           wrap: true,
@@ -399,7 +398,7 @@ export function menuFlex() {
         },
         {
           type: "text",
-          text: "เพิ่ม ชื่อ | ความสำคัญ | รายละเอียด | สถานที่ | วันเวลา (วว/ดด/ปปปป)",
+          text: "เพิ่ม ชื่อ | รายละเอียด | สถานที่ | วันเวลา (วว/ดด/ปปปป)",
           size: "xs",
           color: "#666666",
           wrap: true,
@@ -414,7 +413,7 @@ export function menuFlex() {
           paddingAll: "8px",
           contents: [
             { type: "text", text: "ตัวอย่าง:", size: "xs", color: "#b45309", weight: "bold" },
-            { type: "text", text: "เพิ่ม ส่งงาน | สำคัญ | ไฟล์ PDF | ไลน์ | 15/06/2026 14:30", size: "xs", color: "#b45309", wrap: true }
+            { type: "text", text: "เพิ่ม ส่งงาน | ไฟล์ PDF | ไลน์ | 15/06/2026 14:30", size: "xs", color: "#b45309", wrap: true }
           ]
         },
         {
@@ -471,7 +470,7 @@ export function needRegisterFlex() {
       layout: "vertical",
       contents: [
         { type: "text", text: "กรุณาสมัครสมาชิกก่อน", weight: "bold", size: "md", color: "#f59e0b", wrap: true },
-        { type: "text", text: "คุณต้องสมัครก่อนจึงจะใช้งานได้", size: "sm", color: "#666666", margin: "md", wrap: true },
+        { type: "text", text: "คุณต้องสมัครก่อนจึงจะใช้งาน Harnkhm Lab ได้", size: "sm", color: "#666666", margin: "md", wrap: true },
         { type: "separator", margin: "lg" },
         { type: "text", text: "พิมพ์:", size: "sm", color: "#666666", margin: "lg" },
         { type: "text", text: "สมัคร ชื่อ เบอร์โทร", weight: "bold", size: "md", color: "#6366f1", margin: "sm" },
@@ -481,14 +480,8 @@ export function needRegisterFlex() {
   };
 }
 
-export function addSuccessFlex(title: string, priorityLabel: string, points: number, description?: string, location?: string, dueDate?: string) {
+export function addSuccessFlex(title: string, points: number, description?: string, location?: string, dueDate?: string) {
   const rows: any[] = [
-    {
-      type: "box", layout: "horizontal", contents: [
-        { type: "text", text: "ความสำคัญ", size: "xs", color: "#999999", flex: 3 },
-        { type: "text", text: priorityLabel, size: "xs", weight: "bold", flex: 5, align: "end" },
-      ]
-    },
     {
       type: "box", layout: "horizontal", contents: [
         { type: "text", text: "คะแนน", size: "xs", color: "#999999", flex: 3 },

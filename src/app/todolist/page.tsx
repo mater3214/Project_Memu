@@ -8,10 +8,10 @@ import TodoForm from "@/components/todo-form";
 import TodoList from "@/components/todo-list";
 import Dashboard from "@/components/dashboard";
 import RankBoard from "@/components/rank-board";
-import { Todo, TodoPriority, DashboardStats, RankUser, UserProfile } from "@/types";
+import NoteH from "@/components/note-pasin";
+import { Todo, DashboardStats, RankUser, UserProfile } from "@/types";
 import { toast } from "sonner";
 import {
-  LayoutDashboard,
   Trophy,
   ListTodo,
   Sparkles,
@@ -19,12 +19,11 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-type Section = "dashboard" | "rank" | "list";
+type Section = "dashboard" | "rank" | "list" | "notes";
 
 const sections: { key: Section; label: string; icon: React.ElementType }[] = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "rank", label: "อันดับ", icon: Trophy },
   { key: "list", label: "รายการ", icon: ListTodo },
+  { key: "rank", label: "อันดับ", icon: Trophy },
 ];
 
 export default function TodolistPage() {
@@ -97,7 +96,7 @@ export default function TodolistPage() {
   useEffect(() => {
     const onHashChange = () => {
       const h = window.location.hash.replace("#", "") as Section;
-      if (["dashboard", "rank", "list"].includes(h)) {
+      if (["dashboard", "rank", "list", "notes"].includes(h)) {
         setHash(h);
       } else {
         setHash("list");
@@ -118,9 +117,9 @@ export default function TodolistPage() {
     title: string;
     description?: string;
     location?: string;
-    priority: TodoPriority;
     due_date?: string;
     points_reward: number;
+    is_important: boolean;
   }) => {
     try {
       const res = await fetch("/api/todos", {
@@ -246,6 +245,10 @@ export default function TodolistPage() {
 
           {hash === "rank" && (
             <RankBoard users={rankUsers} loading={loading} />
+          )}
+
+          {hash === "notes" && (
+            <NoteH />
           )}
 
           {hash === "list" && (

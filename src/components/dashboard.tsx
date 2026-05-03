@@ -30,6 +30,10 @@ import {
   Edit3,
   Save,
   X,
+  StickyNote,
+  Star,
+  Timer,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -112,6 +116,13 @@ export default function Dashboard({ stats, loading, user, onProfileUpdate }: Das
     { title: "เสร็จแล้ว", value: stats.completed, icon: CheckCircle2, color: "text-chart-5", bg: "bg-chart-5/10" },
     { title: "รอดำเนินการ", value: stats.pending, icon: Clock, color: "text-chart-2", bg: "bg-chart-2/10" },
     { title: "คะแนนรวม", value: stats.totalPoints, icon: Trophy, color: "text-chart-3", bg: "bg-chart-3/10" },
+  ];
+
+  const noteCards = [
+    { title: "บันทึก NoteH.", value: stats.noteCount, icon: StickyNote, color: "text-chart-5", bg: "bg-chart-5/10" },
+    { title: "คะแนนจาก NoteH.", value: stats.notePoints, icon: StickyNote, color: "text-chart-3", bg: "bg-chart-3/10" },
+    { title: "สำคัญที่ทันเวลา", value: stats.importantOnTime, icon: Timer, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "สำคัญที่ช้า", value: stats.importantLate, icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   return (
@@ -279,6 +290,30 @@ export default function Dashboard({ stats, loading, user, onProfileUpdate }: Das
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
+          >
+            <Card className="border-border/40 bg-white/80 shadow-sm backdrop-blur-sm transition-all hover:shadow-md">
+              <CardContent className="flex items-center gap-4 p-5">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.bg}`}>
+                  <c.icon className={`h-5 w-5 ${c.color}`} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{c.title}</p>
+                  <p className="text-2xl font-bold">{c.value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* NoteH Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {noteCards.map((c, idx) => (
+          <motion.div
+            key={c.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + idx * 0.1 }}
           >
             <Card className="border-border/40 bg-white/80 shadow-sm backdrop-blur-sm transition-all hover:shadow-md">
               <CardContent className="flex items-center gap-4 p-5">

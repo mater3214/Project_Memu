@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Todolish - LINE Connected To-Do List",
-  description: "จัดการรายการ Todo ของคุณ พร้อมเชื่อมต่อกับ LINE Bot",
+  title: "Harnkhm Lab - จัดการงานและบันทึกของคุณ",
+  description: "จัดการรายการ Todo และสรุปบันทึกของคุณ พร้อมระบบคะแนน",
 };
 
 export default function RootLayout({

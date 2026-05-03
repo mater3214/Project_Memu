@@ -31,7 +31,6 @@ import {
   deleteQuickReply,
   detailsOptionsFlex,
   askTemplateFlex,
-  priorityOptionsFlex,
   templateOptionsCarousel,
   todoListCarouselFlex,
   pointsFlex,
@@ -64,22 +63,8 @@ function generatePassword(): string {
   return randomBytes(4).toString("hex");
 }
 
-// Priority system
-const PRIORITY_MAP: Record<string, { priority: number; points: number; label: string }> = {
-  "ต่ำ": { priority: 1, points: 5, label: "ต่ำ (5pts)" },
-  "กลาง": { priority: 2, points: 10, label: "กลาง (10pts)" },
-  "สูง": { priority: 3, points: 25, label: "สูง (25pts)" },
-  "สูงมาก": { priority: 4, points: 40, label: "สูงมาก (40pts)" },
-  "สำคัญ": { priority: 5, points: 65, label: "สำคัญ (65pts)" },
-};
-
-const PRI_BY_NUM: Record<number, { label: string; points: number }> = {
-  1: { label: "ต่ำ", points: 25 },
-  2: { label: "กลาง", points: 50 },
-  3: { label: "สูง", points: 100 },
-  4: { label: "สูงมาก", points: 200 },
-  5: { label: "สำคัญ", points: 1000 },
-};
+// Fixed points system — no priority selection
+const FIXED_POINTS = 20;
 
 // Parse Thai date format: DD/MM/YYYY HH:MM → ISO string in UTC+7
 function parseDateThai(text: string): string | undefined {
@@ -115,7 +100,7 @@ async function handleEvent(event: WebhookEvent) {
           total_points: 0,
         });
       }
-      await replyFlex(event.replyToken, "ยินดีต้อนรับสู่ Todolish!", welcomeFlex(profile.displayName));
+      await replyFlex(event.replyToken, "ยินดีต้อนรับสู่ Harnkhm Lab!", welcomeFlex(profile.displayName));
       return;
     }
 
@@ -210,20 +195,9 @@ async function handleEvent(event: WebhookEvent) {
       switch (state) {
         case "ADDING_TITLE":
           tempData.title = text;
-          await setLineState(lineUserId, "ADDING_PRIORITY", tempData);
-          await replyFlex(replyToken, "เลือกระดับความสำคัญ", priorityOptionsFlex());
-          return;
-
-        case "ADDING_PRIORITY":
-          const priInfoTitle = PRIORITY_MAP[text];
-          if (!priInfoTitle) {
-             await replyFlex(replyToken, "กรุณาเลือกความสำคัญจากเมนู", priorityOptionsFlex());
-             return;
-          }
-          tempData.priority = priInfoTitle.priority as any;
-          tempData.points_reward = priInfoTitle.points;
+          tempData.points_reward = FIXED_POINTS;
           await setLineState(lineUserId, "ADDING_DETAILS", tempData);
-          await replyFlex(replyToken, "ต้องการเพิ่มข้อมูลอะไรอีกไหม?", detailsOptionsFlex());
+          await replyFlex(replyToken, "ตั้งชื่อรายการแล้ว\nต้องการเพิ่มข้อมูลอะไรอีกไหม?", detailsOptionsFlex());
           return;
 
         case "ADDING_DETAILS":
@@ -238,10 +212,6 @@ async function handleEvent(event: WebhookEvent) {
           } else if (text === "เวลา") {
             await setLineState(lineUserId, "ADDING_TIME", tempData);
             await replyText(replyToken, "กรุณากรอกเวลา (เช่น 05/05/2026 14:30):");
-            return;
-          } else if (text === "ความสำคัญ") {
-            await setLineState(lineUserId, "ADDING_PRIORITY", tempData);
-            await replyFlex(replyToken, "เลือกระดับความสำคัญ", priorityOptionsFlex());
             return;
           } else if (text === "ตกลง") {
             await setLineState(lineUserId, "ASK_TEMPLATE", tempData);
@@ -286,8 +256,7 @@ async function handleEvent(event: WebhookEvent) {
             return;
           }
 
-          const finalPriority = tempData.priority || 1;
-          const finalPoints = tempData.points_reward || 25;
+          const finalPoints = tempData.points_reward || FIXED_POINTS;
           const todoTitle = tempData.title!;
 
           const todo = await createTodo({
@@ -295,7 +264,7 @@ async function handleEvent(event: WebhookEvent) {
             title: todoTitle,
             description: tempData.description,
             location: tempData.location,
-            priority: finalPriority as any,
+            priority: 1,
             points_reward: finalPoints,
             due_date: tempData.due_date,
           });
@@ -306,7 +275,7 @@ async function handleEvent(event: WebhookEvent) {
                 title: todoTitle,
                 description: tempData.description,
                 location: tempData.location,
-                priority: finalPriority,
+                priority: 1,
                 points_reward: finalPoints,
              });
           }
@@ -314,13 +283,12 @@ async function handleEvent(event: WebhookEvent) {
           await clearLineState(lineUserId);
 
           if (todo) {
-             const finalLabel = Object.values(PRIORITY_MAP).find(p => p.priority === todo.priority)?.label || "ต่ำ (25pts)";
              const displayDate = tempData.due_date ? tempData.due_date.replace("T", " ") : undefined;
              const todosList = await getTodosByUser(dbUser.id);
              const pendingWithIndex = todosList.map((t: Todo, i: number) => ({ t, i: i + 1 })).filter(({ t }) => t.status !== "completed");
 
              await safeReply(replyToken, [
-                { type: "flex", altText: `เพิ่ม "${todo.title}" สำเร็จ`, contents: addSuccessFlex(todo.title, finalLabel, finalPoints, todo.description, todo.location, displayDate) },
+                { type: "flex", altText: `เพิ่ม "${todo.title}" สำเร็จ`, contents: addSuccessFlex(todo.title, finalPoints, todo.description, todo.location, displayDate) },
                 { type: "flex", altText: "รายการของคุณ", contents: todoListCarouselFlex(pendingWithIndex), quickReply: mainQuickReply() }
              ]);
           } else {
@@ -349,16 +317,15 @@ async function handleEvent(event: WebhookEvent) {
            title: t.title,
            description: t.description,
            location: t.location,
-           priority: t.priority,
-           points_reward: t.points_reward,
+           priority: 1,
+           points_reward: t.points_reward || FIXED_POINTS,
         });
         if (todo) {
-            const finalLabel = Object.values(PRIORITY_MAP).find(p => p.priority === todo.priority)?.label || "ต่ำ (5pts)";
             const todosList = await getTodosByUser(dbUser.id);
             const pendingWithIndex = todosList.map((t: Todo, i: number) => ({ t, i: i + 1 })).filter(({ t }) => t.status !== "completed");
             
             await safeReply(replyToken, [
-               { type: "flex", altText: `เพิ่ม "${todo.title}" สำเร็จ`, contents: addSuccessFlex(todo.title, finalLabel, todo.points_reward, todo.description, todo.location, undefined) },
+               { type: "flex", altText: `เพิ่ม "${todo.title}" สำเร็จ`, contents: addSuccessFlex(todo.title, todo.points_reward, todo.description, todo.location, undefined) },
                { type: "flex", altText: "รายการของคุณ", contents: todoListCarouselFlex(pendingWithIndex), quickReply: mainQuickReply() }
             ]);
         } else {
@@ -395,19 +362,13 @@ async function handleEvent(event: WebhookEvent) {
         const todoLocation = pipeParts[3] || undefined;
         const todoDateText = pipeParts[4] || undefined;
 
-        const priInfo = PRIORITY_MAP[priorityText];
-
-        // Only title given → show Flex to choose priority
-        if (!priInfo && pipeParts.length <= 1) {
-          // Fallback to new flow if they just typed "เพิ่ม [ชื่อ]"
-          await setLineState(lineUserId, "ADDING_DETAILS", { title: todoTitle });
+        // Only title given → direct to details flow
+        if (pipeParts.length <= 1) {
+          await setLineState(lineUserId, "ADDING_DETAILS", { title: todoTitle, points_reward: FIXED_POINTS });
           await replyFlex(replyToken, `ตั้งชื่อรายการเป็น "${todoTitle}" แล้ว\nต้องการเพิ่มข้อมูลอะไรอีกไหม?`, detailsOptionsFlex());
           return;
         }
 
-        const finalPriority = priInfo?.priority || 1;
-        const finalPoints = priInfo?.points || 25;
-        const finalLabel = priInfo?.label || "ต่ำ (25pts)";
         const dueDateISO = todoDateText ? parseDateThai(todoDateText) : undefined;
 
         const todo = await createTodo({
@@ -415,15 +376,15 @@ async function handleEvent(event: WebhookEvent) {
           title: todoTitle,
           description: todoDesc,
           location: todoLocation,
-          priority: finalPriority as any,
-          points_reward: finalPoints,
+          priority: 1,
+          points_reward: FIXED_POINTS,
           due_date: dueDateISO,
         });
 
         if (todo) {
           await replyFlexWithQuickReply(replyToken,
             `เพิ่ม "${todoTitle}" สำเร็จ`,
-            addSuccessFlex(todoTitle, finalLabel, finalPoints, todoDesc, todoLocation, todoDateText),
+            addSuccessFlex(todoTitle, FIXED_POINTS, todoDesc, todoLocation, todoDateText),
             mainQuickReply()
           );
         } else {
@@ -540,7 +501,7 @@ async function handleEvent(event: WebhookEvent) {
 
       default: {
         // Unknown command → show menu with Quick Reply
-        await replyFlexWithQuickReply(replyToken, "คำสั่ง Todolish", menuFlex(), mainQuickReply());
+        await replyFlexWithQuickReply(replyToken, "คำสั่ง Harnkhm Lab", menuFlex(), mainQuickReply());
       }
     }
   } catch (err: any) {

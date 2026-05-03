@@ -168,14 +168,21 @@ export async function getLeaderboard(): Promise<RankUser[]> {
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const { data: todos, error } = await getAdmin()
     .from("todos")
-    .select("status")
+    .select("status, is_important, completed_at, due_date")
     .eq("user_id", userId);
   if (error || !todos) {
-    return { total: 0, completed: 0, pending: 0, totalPoints: 0 };
+    return { total: 0, completed: 0, pending: 0, totalPoints: 0, noteCount: 0, notePoints: 0, importantCompleted: 0, importantOnTime: 0, importantLate: 0 };
   }
   const total = todos.length;
   const completed = todos.filter((t: { status: string }) => t.status === "completed").length;
   const pending = total - completed;
+
+  const importantCompleted = todos.filter((t: any) => t.status === "completed" && t.is_important).length;
+  const importantOnTime = todos.filter((t: any) => {
+    if (t.status !== "completed" || !t.is_important || !t.completed_at || !t.due_date) return false;
+    return new Date(t.completed_at).getTime() <= new Date(t.due_date).getTime();
+  }).length;
+  const importantLate = importantCompleted - importantOnTime;
 
   const { data: user } = await getAdmin()
     .from("users")
@@ -183,11 +190,23 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     .eq("id", userId)
     .single();
 
+  const { data: notes } = await getAdmin()
+    .from("notes")
+    .select("points_reward")
+    .eq("user_id", userId);
+  const noteCount = notes?.length ?? 0;
+  const notePoints = (notes || []).reduce((sum: number, n: any) => sum + (n.points_reward || 0), 0);
+
   return {
     total,
     completed,
     pending,
     totalPoints: user?.total_points ?? 0,
+    noteCount,
+    notePoints,
+    importantCompleted,
+    importantOnTime,
+    importantLate,
   };
 }
 

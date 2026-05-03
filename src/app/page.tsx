@@ -122,8 +122,8 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-6 max-w-xl text-lg text-muted-foreground"
           >
-            Todolish ช่วยให้คุณติดตามรายการที่ต้องทำ พร้อมระบบคะแนน Rank
-            และการแจ้งเตือนผ่าน LINE
+            Harnkhm Lab ช่วยให้คุณติดตามรายการที่ต้องทำ และสรุปบันทึกสิ่งสำคัญ
+            พร้อมระบบคะแนน Rank และการแจ้งเตือนผ่าน LINE
           </motion.p>
 
           {/* CTA — Menu Selection */}

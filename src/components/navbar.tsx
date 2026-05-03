@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Menu, X, LogIn, LogOut, User, ChevronDown, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, ChevronDown, LayoutDashboard, ListTodo, StickyNote, Trophy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -10,9 +10,11 @@ import { useRouter } from "next/navigation";
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<{ display_name: string; picture_url?: string } | null>(null);
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +29,9 @@ export default function Navbar() {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -50,22 +55,55 @@ export default function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-chart-2 shadow-md shadow-primary/20 transition-shadow group-hover:shadow-lg group-hover:shadow-primary/30">
-            <CheckCircle2 className="h-5 w-5 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shadow-md shadow-primary/20 transition-shadow group-hover:shadow-lg group-hover:shadow-primary/30">
+            <img src="/logo.png" alt="Harnkhm Lab" className="h-full w-full object-cover" />
           </div>
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Todolish
+            Harnkhm Lab
           </span>
         </Link>
 
-        {/* Desktop Nav Center */}
+        {/* Desktop Nav Center — Menu Dropdown */}
         <nav className="hidden items-center gap-6 md:flex">
-          <Link
-            href="/todolist#list"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Todolist
-          </Link>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Menu
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-border/50 bg-white shadow-xl shadow-black/10 backdrop-blur-xl"
+                >
+                  <div className="p-1.5">
+                    <Link
+                      href="/todolist#list"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
+                    >
+                      <ListTodo className="h-4 w-4" />
+                      Todolist
+                    </Link>
+                    <Link
+                      href="/todolist#notes"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
+                    >
+                      <StickyNote className="h-4 w-4" />
+                      NoteH.
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </nav>
 
         {/* Desktop Right — NO "เข้าสู่ระบบ" when logged in */}
@@ -155,6 +193,9 @@ export default function Navbar() {
           >
             <Link href="/todolist#list" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
               Todolist
+            </Link>
+            <Link href="/todolist#notes" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
+              NoteH.
             </Link>
             <div className="mt-3">
               {user ? (

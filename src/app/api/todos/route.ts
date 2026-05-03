@@ -7,7 +7,6 @@ import {
   getDashboardStats,
   getAdmin,
 } from "@/lib/supabase";
-import { TodoPriority } from "@/types";
 
 // Helper: resolve "demo-user" to a real UUID from the database
 async function resolveUserId(rawId: string | null): Promise<string | null> {
@@ -90,7 +89,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { user_id, title, description, location, priority, due_date, points_reward } =
+    const { user_id, title, description, location, due_date, is_important } =
       body;
 
     if (!user_id || !title) {
@@ -112,9 +111,10 @@ export async function POST(req: NextRequest) {
       user_id: resolvedUserId,
       title,
       description,
-      priority: (priority as TodoPriority) ?? 1,
+      priority: 1,
       due_date: due_date || undefined,
-      points_reward: Math.max(1, points_reward ?? 25),
+      points_reward: 20,
+      is_important: !!is_important,
     };
     if (location) insertData.location = location;
 
@@ -141,21 +141,21 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { status, title, description, priority, due_date } = body;
+    const { status, title, description, due_date, is_important } = body;
 
     const updates: any = {};
     if (status !== undefined) updates.status = status;
     if (title !== undefined) updates.title = title;
     if (description !== undefined) updates.description = description;
-    if (priority !== undefined) updates.priority = priority;
     if (due_date !== undefined) updates.due_date = due_date;
+    if (is_important !== undefined) updates.is_important = is_important;
 
-    // If status is changing, handle points
+    // If status is changing, handle dynamic points
     if (status !== undefined) {
-      // Get current todo to check old status and get points_reward
+      // Get current todo to check old status and get all fields
       const { data: currentTodo } = await getAdmin()
         .from("todos")
-        .select("status, points_reward, user_id")
+        .select("status, points_reward, user_id, is_important, due_date, created_at")
         .eq("id", id)
         .single();
 
@@ -170,9 +170,29 @@ export async function PATCH(req: NextRequest) {
         if (userData) {
           let newPoints = userData.total_points;
           if (status === "completed") {
-            newPoints += currentTodo.points_reward;
+            // Calculate dynamic points: base 20 + star bonus/penalty
+            const basePoints = 20;
+            let actualPoints = basePoints;
+            const now = new Date();
+            if (currentTodo.is_important) {
+              const dueDate = currentTodo.due_date ? new Date(currentTodo.due_date) : null;
+              if (dueDate) {
+                const isOnTime = now.getTime() <= dueDate.getTime();
+                actualPoints = isOnTime ? basePoints + 5 : basePoints - 5;
+              }
+            }
+            // Ensure points don't go below 0
+            actualPoints = Math.max(0, actualPoints);
+            newPoints += actualPoints;
+            // Update todo's points_reward to actual awarded amount
+            updates.points_reward = actualPoints;
+            updates.completed_at = now.toISOString();
           } else if (status === "pending" && currentTodo.status === "completed") {
+            // Reverting: subtract what was actually awarded
             newPoints = Math.max(0, newPoints - currentTodo.points_reward);
+            // Reset points_reward to base 20 and clear completed_at
+            updates.points_reward = 20;
+            updates.completed_at = null;
           }
 
           await getAdmin()
@@ -182,10 +202,11 @@ export async function PATCH(req: NextRequest) {
 
           // Log the action
           if (status === "completed") {
+            const awarded = updates.points_reward;
             await getAdmin().from("todo_logs").insert({
               todo_id: id,
               user_id: currentTodo.user_id,
-              action: `completed (+${currentTodo.points_reward}pts)`,
+              action: `completed (+${awarded}pts)`,
             });
           }
         }

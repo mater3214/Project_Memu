@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Todo, TodoPriority } from "@/types";
+import { Todo } from "@/types";
 import {
   CheckCircle2,
   Circle,
@@ -17,6 +17,7 @@ import {
   Trophy,
   Clock,
   Flame,
+  Star,
 } from "lucide-react";
 
 interface TodoListProps {
@@ -39,13 +40,6 @@ export default function TodoList({ todos, loading, onToggle, onDelete }: TodoLis
   const completed = todos.filter((t) => t.status === "completed").length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const priorityConfig: Record<TodoPriority, { label: string; emoji: string; color: string; bg: string }> = {
-    1: { label: "ต่ำ", emoji: "💎", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
-    2: { label: "กลาง", emoji: "⚡", color: "text-amber-600", bg: "bg-amber-50 border-amber-100" },
-    3: { label: "สูง", emoji: "🔥", color: "text-red-600", bg: "bg-red-50 border-red-100" },
-    4: { label: "สูงมาก", emoji: "💥", color: "text-purple-600", bg: "bg-purple-50 border-purple-100" },
-    5: { label: "สำคัญ", emoji: "⭐", color: "text-yellow-600", bg: "bg-yellow-50 border-yellow-200" },
-  };
 
   const filterTabs = [
     { key: "all" as const, label: "ทั้งหมด", count: total },
@@ -126,7 +120,6 @@ export default function TodoList({ todos, loading, onToggle, onDelete }: TodoLis
         <div className="space-y-2">
           <AnimatePresence mode="popLayout">
             {filtered.map((todo, idx) => {
-              const p = priorityConfig[todo.priority];
               const isCompleted = todo.status === "completed";
               return (
                 <motion.div
@@ -143,14 +136,10 @@ export default function TodoList({ todos, loading, onToggle, onDelete }: TodoLis
                         : "border-border/40 bg-white/80 shadow-sm hover:shadow-md hover:border-primary/20 backdrop-blur-sm"
                       }`}
                   >
-                    {/* Priority indicator */}
-                    <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${todo.priority === 3 ? "bg-red-400" : todo.priority === 2 ? "bg-amber-400" : "bg-emerald-400"
-                      }`} />
-
                     {/* Check button */}
                     <button
                       onClick={() => onToggle(todo.id)}
-                      className="mt-0.5 shrink-0 ml-2 transition-transform hover:scale-110 active:scale-95"
+                      className="mt-0.5 shrink-0 transition-transform hover:scale-110 active:scale-95"
                       aria-label={isCompleted ? "ยกเลิก" : "เสร็จสิ้น"}
                     >
                       {isCompleted ? (
@@ -168,15 +157,10 @@ export default function TodoList({ todos, loading, onToggle, onDelete }: TodoLis
 
                     {/* Content */}
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className={`text-sm font-medium transition-all ${isCompleted ? "line-through text-muted-foreground" : ""
-                          }`}>
-                          {todo.title}
-                        </p>
-                        <span className={`inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${p.bg}`}>
-                          {p.emoji} {p.label}
-                        </span>
-                      </div>
+                      <p className={`text-sm font-medium transition-all ${isCompleted ? "line-through text-muted-foreground" : ""
+                        }`}>
+                        {todo.title}
+                      </p>
                       {todo.description && (
                         <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{todo.description}</p>
                       )}
@@ -185,6 +169,12 @@ export default function TodoList({ todos, loading, onToggle, onDelete }: TodoLis
                           <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {new Date(todo.due_date + (todo.due_date.endsWith('Z') ? '' : 'Z')).toLocaleString("th-TH", { timeZone: "UTC", dateStyle: "short", timeStyle: "short" })}
+                          </span>
+                        )}
+                        {todo.is_important && (
+                          <span className="flex items-center gap-0.5 text-[11px] text-yellow-600">
+                            <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                            สำคัญ
                           </span>
                         )}
                         <span className="flex items-center gap-0.5 text-[11px] text-chart-3">
