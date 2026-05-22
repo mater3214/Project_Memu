@@ -184,6 +184,13 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   }).length;
   const importantLate = importantCompleted - importantOnTime;
 
+  // New stats: todos without due date and unstarred late completions
+  const noDueDate = todos.filter((t: any) => t.status === "completed" && !t.due_date).length;
+  const unstarredLate = todos.filter((t: any) => {
+    if (t.status !== "completed" || t.is_important || !t.completed_at || !t.due_date) return false;
+    return new Date(t.completed_at).getTime() > new Date(t.due_date).getTime();
+  }).length;
+
   const { data: user } = await getAdmin()
     .from("users")
     .select("total_points")
@@ -207,6 +214,8 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     importantCompleted,
     importantOnTime,
     importantLate,
+    noDueDate,
+    unstarredLate,
   };
 }
 

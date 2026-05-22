@@ -170,23 +170,40 @@ export async function PATCH(req: NextRequest) {
         if (userData) {
           let newPoints = userData.total_points;
           if (status === "completed") {
-            // Calculate dynamic points: base 20 + star bonus/penalty
-            const basePoints = 20;
-            let actualPoints = basePoints;
+            // If marking as completed, calculate points based on is_important and due_date
             const now = new Date();
-            if (currentTodo.is_important) {
-              const dueDate = currentTodo.due_date ? new Date(currentTodo.due_date) : null;
-              if (dueDate) {
-                const isOnTime = now.getTime() <= dueDate.getTime();
-                actualPoints = isOnTime ? basePoints + 5 : basePoints - 5;
+            let calculatedPoints = 20; // base points
+
+            const dueDate = currentTodo.due_date ? new Date(currentTodo.due_date) : null;
+
+            if (!dueDate) {
+              // No due date set - only 5 pts to encourage setting deadlines
+              calculatedPoints = 5;
+            } else {
+              // Has due date
+              const isLate = now > dueDate;
+
+              if (currentTodo.is_important) {
+                // Starred todo
+                if (isLate) {
+                  calculatedPoints = 15; // -5 penalty for late
+                } else {
+                  calculatedPoints = 25; // +5 bonus for on-time
+                }
+              } else {
+                // Unstarred todo
+                if (isLate) {
+                  calculatedPoints = 18; // -2 penalty for late (unstarred)
+                } else {
+                  calculatedPoints = 20; // base points on-time
+                }
               }
             }
-            // Ensure points don't go below 0
-            actualPoints = Math.max(0, actualPoints);
-            newPoints += actualPoints;
-            // Update todo's points_reward to actual awarded amount
-            updates.points_reward = actualPoints;
+
+            updates.points_reward = calculatedPoints;
             updates.completed_at = now.toISOString();
+
+            newPoints += calculatedPoints;
           } else if (status === "pending" && currentTodo.status === "completed") {
             // Reverting: subtract what was actually awarded
             newPoints = Math.max(0, newPoints - currentTodo.points_reward);

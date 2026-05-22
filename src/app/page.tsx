@@ -126,26 +126,20 @@ export default function Home() {
             พร้อมระบบคะแนน Rank และการแจ้งเตือนผ่าน LINE
           </motion.p>
 
-          {/* CTA — Menu Selection */}
+          {/* CTA — Get Started */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-8 flex gap-3"
+            className="mt-8"
           >
-            <Link href="/todolist#list" passHref>
+            <Link href="/menu" passHref>
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-primary to-chart-2 font-semibold shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+                className="bg-gradient-to-r from-primary to-chart-2 px-8 font-semibold shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
               >
-                <ListTodo className="mr-2 h-4 w-4" />
-                Todolist
+                เริ่มต้นใช้งาน
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/todolist#dashboard" passHref>
-              <Button variant="outline" size="lg" className="backdrop-blur-sm">
-                ดู Dashboard
               </Button>
             </Link>
           </motion.div>

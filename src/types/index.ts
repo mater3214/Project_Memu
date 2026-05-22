@@ -94,6 +94,8 @@ export interface DashboardStats {
   importantCompleted: number;
   importantOnTime: number;
   importantLate: number;
+  noDueDate?: number;
+  unstarredLate?: number;
 }
 
 export interface UserProfile {

@@ -94,17 +94,13 @@ export default function TodolistPage() {
   }, [userId, fetchTodos, fetchStats, fetchRank]);
 
   useEffect(() => {
-    const onHashChange = () => {
-      const h = window.location.hash.replace("#", "") as Section;
-      if (["dashboard", "rank", "list", "notes"].includes(h)) {
-        setHash(h);
-      } else {
-        setHash("list");
-      }
+    const updateHash = () => {
+      const rawHash = window.location.hash.replace("#", "") || "list";
+      setHash(rawHash as Section);
     };
-    onHashChange();
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    updateHash(); // Set initial hash
+    window.addEventListener("hashchange", updateHash);
+    return () => window.removeEventListener("hashchange", updateHash);
   }, []);
 
   const refreshUser = async () => {

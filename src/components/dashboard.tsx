@@ -118,11 +118,14 @@ export default function Dashboard({ stats, loading, user, onProfileUpdate }: Das
     { title: "คะแนนรวม", value: stats.totalPoints, icon: Trophy, color: "text-chart-3", bg: "bg-chart-3/10" },
   ];
 
+  // Note cards defined inside render with null-safety
   const noteCards = [
-    { title: "บันทึก NoteH.", value: stats.noteCount, icon: StickyNote, color: "text-chart-5", bg: "bg-chart-5/10" },
-    { title: "คะแนนจาก NoteH.", value: stats.notePoints, icon: StickyNote, color: "text-chart-3", bg: "bg-chart-3/10" },
-    { title: "สำคัญที่ทันเวลา", value: stats.importantOnTime, icon: Timer, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { title: "สำคัญที่ช้า", value: stats.importantLate, icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { title: "บันทึก NoteH.", value: stats?.noteCount ?? 0, icon: StickyNote, color: "text-chart-5", bg: "bg-chart-5/10" },
+    { title: "คะแนนจาก NoteH.", value: stats?.notePoints ?? 0, icon: StickyNote, color: "text-chart-3", bg: "bg-chart-3/10" },
+    { title: "ไม่มีกำหนดเวลา", value: stats?.noDueDate ?? 0, icon: Timer, color: "text-slate-500", bg: "bg-slate-500/10" },
+    { title: "ปกติช้า (-2)", value: stats?.unstarredLate ?? 0, icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { title: "สำคัญทัน", value: stats?.importantOnTime ?? 0, icon: Timer, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "สำคัญช้า", value: stats?.importantLate ?? 0, icon: AlertTriangle, color: "text-rose-500", bg: "bg-rose-500/10" },
   ];
 
   return (
