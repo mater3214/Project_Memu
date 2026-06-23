@@ -94,18 +94,9 @@ export default function TodolistPage() {
   }, [userId, fetchTodos, fetchStats, fetchRank]);
 
   useEffect(() => {
-    const validSections: Section[] = ["dashboard", "rank", "list", "notes"];
     const updateHash = () => {
-      const rawHash = window.location.hash.replace("#", "").trim();
-      // Validate: only accept known section values, default to "list"
-      const section = validSections.includes(rawHash as Section)
-        ? (rawHash as Section)
-        : "list";
-      setHash(section);
-      // Fix URL hash if it was invalid or empty
-      if (!rawHash || !validSections.includes(rawHash as Section)) {
-        window.history.replaceState(null, "", `${window.location.pathname}#${section}`);
-      }
+      const rawHash = window.location.hash.split("#").filter(Boolean).pop() || "list";
+      setHash(rawHash as Section);
     };
     updateHash(); // Set initial hash
     window.addEventListener("hashchange", updateHash);
