@@ -100,7 +100,12 @@ export default function TodolistPage() {
     };
     updateHash(); // Set initial hash
     window.addEventListener("hashchange", updateHash);
-    return () => window.removeEventListener("hashchange", updateHash);
+    // Also listen for popstate — Next.js router.push may trigger this instead of hashchange
+    window.addEventListener("popstate", updateHash);
+    return () => {
+      window.removeEventListener("hashchange", updateHash);
+      window.removeEventListener("popstate", updateHash);
+    };
   }, []);
 
   const refreshUser = async () => {

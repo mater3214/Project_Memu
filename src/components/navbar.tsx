@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LogIn, LogOut, User, ChevronDown, LayoutDashboard, ListTodo, StickyNote, Trophy } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -13,6 +13,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<{ display_name: string; picture_url?: string } | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,29 @@ export default function Navbar() {
     setDropdownOpen(false);
     router.push("/auth");
   };
+
+  /**
+   * Navigate to /todolist#<hash> reliably.
+   * - If already on /todolist: update hash directly + dispatch hashchange
+   * - If on a different page: use router.push, then set hash after navigation
+   */
+  const navigateToHash = useCallback((hash: string) => {
+    const targetPath = "/todolist";
+    const isOnTodolist = pathname === targetPath;
+
+    if (isOnTodolist) {
+      // Already on /todolist — just update hash and fire event
+      const oldHash = window.location.hash;
+      window.location.hash = hash;
+      // If hash was the same, hashchange won't fire, so force it
+      if (oldHash === `#${hash}`) {
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      }
+    } else {
+      // Navigate to /todolist first, then set hash
+      router.push(`${targetPath}#${hash}`);
+    }
+  }, [pathname, router]);
 
   return (
     <motion.header
@@ -83,22 +107,26 @@ export default function Navbar() {
                   className="absolute left-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-border/50 bg-white shadow-xl shadow-black/10 backdrop-blur-xl"
                 >
                   <div className="p-1.5">
-                    <Link
-                      href="/todolist#list"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
+                    <button
+                      onClick={() => {
+                        navigateToHash("list");
+                        setMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
                     >
                       <ListTodo className="h-4 w-4" />
                       Todolist
-                    </Link>
-                    <Link
-                      href="/todolist#notes"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigateToHash("notes");
+                        setMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
                     >
                       <StickyNote className="h-4 w-4" />
                       NoteH.
-                    </Link>
+                    </button>
                   </div>
                 </motion.div>
               )}
@@ -145,14 +173,16 @@ export default function Navbar() {
                       <p className="truncate text-sm font-semibold mt-0.5">{user.display_name}</p>
                     </div>
                     <div className="p-1.5">
-                      <Link
-                        href="/todolist#dashboard"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
+                      <button
+                        onClick={() => {
+                          navigateToHash("dashboard");
+                          setDropdownOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-colors"
                       >
                         <LayoutDashboard className="h-4 w-4" />
                         Dashboard
-                      </Link>
+                      </button>
                       <button
                         onClick={handleLogout}
                         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive/70 hover:bg-destructive/5 hover:text-destructive transition-colors"
@@ -191,12 +221,24 @@ export default function Navbar() {
             exit={{ height: 0, opacity: 0 }}
             className="border-t border-border/50 px-4 py-4 md:hidden overflow-hidden"
           >
-            <Link href="/todolist#list" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
+            <button
+              className="block w-full text-left py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                navigateToHash("list");
+                setMobileOpen(false);
+              }}
+            >
               Todolist
-            </Link>
-            <Link href="/todolist#notes" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
+            </button>
+            <button
+              className="block w-full text-left py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                navigateToHash("notes");
+                setMobileOpen(false);
+              }}
+            >
               NoteH.
-            </Link>
+            </button>
             <div className="mt-3">
               {user ? (
                 <div className="flex items-center justify-between">
