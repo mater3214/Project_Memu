@@ -71,7 +71,7 @@ function parseDateInput(input: string): string | undefined {
 
     const hourStr = hour.toString().padStart(2, "0");
     const minStr = minute.toString().padStart(2, "0");
-    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hourStr}:${minStr}:00`;
+    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hourStr}:${minStr}:00+07:00`;
   }
   // Try ISO/native format
   const d = new Date(cleaned);

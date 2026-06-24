@@ -77,7 +77,7 @@ function parseDateThai(text: string): string | undefined {
     const m = parseInt(min || "59", 10);
     const hourStr = h.toString().padStart(2, "0");
     const minStr = m.toString().padStart(2, "0");
-    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hourStr}:${minStr}:00`;
+    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hourStr}:${minStr}:00+07:00`;
   }
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d.toISOString();
