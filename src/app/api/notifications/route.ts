@@ -20,15 +20,16 @@ export async function GET(req: NextRequest) {
 
   try {
     const now = new Date();
+    const thaiNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     // Find pending todos that are due within the next 6 minutes (for ~5 min advance warning)
-    const sixMinLater = new Date(now.getTime() + 6 * 60000);
+    const sixMinLater = new Date(thaiNow.getTime() + 6 * 60000);
 
     const { data, error } = await getAdmin()
       .from("todos")
       .select("id, title, location, points_reward, due_date, is_important")
       .eq("user_id", userId)
       .eq("status", "pending")
-      .gte("due_date", now.toISOString())
+      .gte("due_date", thaiNow.toISOString())
       .lte("due_date", sixMinLater.toISOString());
 
     if (error) {

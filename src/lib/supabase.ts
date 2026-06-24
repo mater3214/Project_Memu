@@ -221,9 +221,13 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 
 export async function getUpcomingNotifications(): Promise<Todo[]> {
   const now = new Date();
+  // Vercel runs in UTC. Database stores literal local time (TIMESTAMP WITHOUT TIME ZONE).
+  // Shift the time forward by 7 hours (Thailand time) to match the DB records.
+  const thaiNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+
   // Notify todos that are due in 4-6 minutes from now (i.e., ~5 minutes before due_date)
-  const fourMinLater = new Date(now.getTime() + 4 * 60000);
-  const sixMinLater = new Date(now.getTime() + 6 * 60000);
+  const fourMinLater = new Date(thaiNow.getTime() + 4 * 60000);
+  const sixMinLater = new Date(thaiNow.getTime() + 6 * 60000);
 
   const { data, error } = await getAdmin()
     .from("todos")
