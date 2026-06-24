@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import {
   ListTodo,
   Sparkles,
   Loader2,
+  Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -36,6 +37,7 @@ export default function TodolistPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const notifiedIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch current user session — redirect if not logged in
   useEffect(() => {
@@ -92,6 +94,47 @@ export default function TodolistPage() {
       setLoading(false)
     );
   }, [userId, fetchTodos, fetchStats, fetchRank]);
+
+  // === Web Notification Polling (every 30 seconds) ===
+  useEffect(() => {
+    if (!userId) return;
+
+    const checkNotifications = async () => {
+      try {
+        const res = await fetch(`/api/notifications?userId=${userId}`);
+        const data = await res.json();
+        const notifications = data.notifications || [];
+
+        for (const n of notifications) {
+          if (notifiedIdsRef.current.has(n.id)) continue;
+          notifiedIdsRef.current.add(n.id);
+
+          toast(
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <Bell className="h-4 w-4 text-amber-500" />
+                ⏰ ใกล้ถึงเวลาแล้ว!
+              </div>
+              <p className="text-sm">📋 {n.title}</p>
+              {n.location && <p className="text-xs text-muted-foreground">📍 {n.location}</p>}
+              <p className="text-xs text-emerald-600 font-medium">⭐ ทำเสร็จได้ +{n.points_reward} คะแนน</p>
+              <p className="text-xs text-muted-foreground mt-1">{n.motivation}</p>
+            </div>,
+            { duration: 15000 }
+          );
+        }
+      } catch {
+        // Silently fail — don't disrupt user experience
+      }
+    };
+
+    // Check immediately on mount
+    checkNotifications();
+
+    // Poll every 30 seconds
+    const interval = setInterval(checkNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
 
   useEffect(() => {
     const updateHash = () => {

@@ -99,6 +99,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validation: due_date is required for all todos
+    if (!due_date) {
+      return NextResponse.json(
+        { error: "due_date is required — ทุกรายการต้องระบุวันเวลา" },
+        { status: 400 }
+      );
+    }
+
+    // Validation: due_date must be >= now + 5 minutes
+    const dueTime = new Date(due_date).getTime();
+    const minTime = Date.now() + 5 * 60 * 1000;
+    if (isNaN(dueTime) || dueTime < minTime) {
+      return NextResponse.json(
+        { error: "due_date must be at least 5 minutes in the future — เวลาต้องมากกว่าปัจจุบันอย่างน้อย 5 นาที" },
+        { status: 400 }
+      );
+    }
+
+    // Validation: important todos require description + location + due_date
+    if (is_important) {
+      const missing: string[] = [];
+      if (!description || !description.trim()) missing.push("รายละเอียด");
+      if (!location || !location.trim()) missing.push("สถานที่");
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `รายการสำคัญต้องกรอกข้อมูลให้ครบ: ${missing.join(", ")}` },
+          { status: 400 }
+        );
+      }
+    }
+
     const resolvedUserId = await resolveUserId(user_id);
     if (!resolvedUserId) {
       return NextResponse.json(
@@ -112,7 +143,7 @@ export async function POST(req: NextRequest) {
       title,
       description,
       priority: 1,
-      due_date: due_date || undefined,
+      due_date: due_date,
       points_reward: 20,
       is_important: !!is_important,
     };

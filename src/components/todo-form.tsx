@@ -19,6 +19,7 @@ import {
   Clock,
   CalendarDays,
   Check,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,6 +35,23 @@ interface TodoFormProps {
 }
 
 const FIXED_POINTS = 20;
+
+/** Format a Date to DD/MM/YYYY HH:MM string */
+function formatDateForInput(d: Date): string {
+  const dd = d.getDate().toString().padStart(2, "0");
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = d.getHours().toString().padStart(2, "0");
+  const min = d.getMinutes().toString().padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}
+
+/** Get default date = now + 10 minutes */
+function getDefaultDate(): string {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + 10);
+  return formatDateForInput(d);
+}
 
 function parseDateInput(input: string): string | undefined {
   if (!input.trim()) return undefined;
@@ -61,6 +79,13 @@ function parseDateInput(input: string): string | undefined {
   return undefined;
 }
 
+/** Check if a due_date ISO string is at least 5 minutes in the future */
+function isTimeFarEnough(isoString: string): boolean {
+  const dueTime = new Date(isoString).getTime();
+  const minTime = Date.now() + 5 * 60 * 1000; // now + 5 min
+  return dueTime >= minTime;
+}
+
 export default function TodoForm({ onAdd }: TodoFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -75,6 +100,11 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [isTemplate, setIsTemplate] = useState(false);
 
+  // Auto-fill date/time on mount (now + 10 minutes)
+  useEffect(() => {
+    setDateText(getDefaultDate());
+  }, []);
+
   useEffect(() => {
     fetch("/api/templates")
       .then((r) => r.json())
@@ -86,10 +116,41 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const dueDate = parseDateInput(dateText);
-    if (dueDate === "INVALID") {
-      toast.error("รูปแบบเวลาไม่ถูกต้อง", { description: "กรุณากรอกเวลาให้ถูกต้อง (ตัวอย่าง: 05/05/2026 14:30)" });
+    // === Validation: เวลาต้องกรอกเสมอ (ทั้งสำคัญและธรรมดา) ===
+    if (!dateText.trim()) {
+      toast.error("กรุณากรอกเวลา", {
+        description: "ทุกรายการต้องระบุวันเวลาก่อนสร้าง",
+      });
       return;
+    }
+
+    const dueDate = parseDateInput(dateText);
+    if (dueDate === "INVALID" || !dueDate) {
+      toast.error("รูปแบบเวลาไม่ถูกต้อง", {
+        description: "กรุณากรอกเวลาให้ถูกต้อง (ตัวอย่าง: 05/05/2026 14:30)",
+      });
+      return;
+    }
+
+    // === Validation: เวลาต้องไม่ย้อนหลัง (≥ now + 5 นาที) ===
+    if (!isTimeFarEnough(dueDate)) {
+      toast.error("เวลาย้อนหลังไม่ได้", {
+        description: "เวลาต้องมากกว่าเวลาปัจจุบันอย่างน้อย 5 นาที",
+      });
+      return;
+    }
+
+    // === Validation: สำคัญ → ต้องกรอก เวลา + สถานที่ + รายละเอียด ===
+    if (isImportant) {
+      const missing: string[] = [];
+      if (!description.trim()) missing.push("รายละเอียด");
+      if (!location.trim()) missing.push("สถานที่");
+      if (missing.length > 0) {
+        toast.error("รายการสำคัญต้องกรอกข้อมูลให้ครบ", {
+          description: `กรุณากรอก: ${missing.join(", ")}`,
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -110,7 +171,8 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
     setTitle("");
     setDescription("");
     setLocation("");
-    setDateText("");
+    // Reset date to new default (now + 10 min)
+    setDateText(getDefaultDate());
     setIsTemplate(false);
     setIsImportant(false);
     setTimeout(() => setSubmitting(false), 500);
@@ -148,6 +210,7 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
     setDescription(t.description || "");
     setLocation(t.location || "");
     setIsImportant(t.is_important || false);
+    // Keep auto-filled date — user can adjust
     setShowTemplates(false);
     toast.success("โหลดเทมเพลตแล้ว");
   };
@@ -223,6 +286,23 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
                 )}
               </div>
 
+              {/* Important mode hint */}
+              <AnimatePresence>
+                {isImportant && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200/60 px-3 py-2 text-[11px] text-yellow-700">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span>รายการสำคัญต้องกรอก <strong>เวลา</strong>, <strong>สถานที่</strong> และ <strong>รายละเอียด</strong> ให้ครบ</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Details section - always visible */}
               <div className="space-y-2.5 pt-2">
                 <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
@@ -231,11 +311,14 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
                 <div className="relative">
                   <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
                   <Input
-                    placeholder="รายละเอียดเพิ่มเติม..."
+                    placeholder={isImportant ? "รายละเอียดเพิ่มเติม... *" : "รายละเอียดเพิ่มเติม..."}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="neon-input h-9 rounded-lg pl-9 bg-secondary/20 border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary/20"
+                    className={`neon-input h-9 rounded-lg pl-9 bg-secondary/20 border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary/20 ${isImportant && !description.trim() ? "ring-1 ring-yellow-400/40 bg-yellow-50/30" : ""}`}
                   />
+                  {isImportant && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-500 text-[10px] font-bold">จำเป็น</span>
+                  )}
                 </div>
 
                 {/* Location + Date row with neon glow */}
@@ -243,20 +326,24 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
                     <Input
-                      placeholder="สถานที่"
+                      placeholder={isImportant ? "สถานที่ *" : "สถานที่"}
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="neon-input h-9 rounded-lg pl-9 bg-secondary/20 border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary/20"
+                      className={`neon-input h-9 rounded-lg pl-9 bg-secondary/20 border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary/20 ${isImportant && !location.trim() ? "ring-1 ring-yellow-400/40 bg-yellow-50/30" : ""}`}
                     />
+                    {isImportant && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-500 text-[10px] font-bold">จำเป็น</span>
+                    )}
                   </div>
                   <div className="relative">
                     <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
                     <Input
-                      placeholder="วัน/เดือน/ปี เวลา เช่น 15/06/2026 14:30"
+                      placeholder="วัน/เดือน/ปี เวลา เช่น 15/06/2026 14:30 *"
                       value={dateText}
                       onChange={(e) => setDateText(e.target.value)}
-                      className="neon-input h-9 rounded-lg pl-9 bg-secondary/20 border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary/20"
+                      className={`neon-input h-9 rounded-lg pl-9 bg-secondary/20 border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary/20 ${!dateText.trim() ? "ring-1 ring-red-400/40 bg-red-50/30" : ""}`}
                     />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-[10px] font-bold">จำเป็น</span>
                   </div>
                 </div>
 
@@ -264,10 +351,12 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Clock className="h-3 w-3 text-muted-foreground/40" />
                   {[
-                    { label: "วันนี้", fn: () => { const d = new Date(); setDateText(`${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()} 23:59`); } },
-                    { label: "พรุ่งนี้", fn: () => { const d = new Date(); d.setDate(d.getDate() + 1); setDateText(`${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()} 23:59`); } },
-                    { label: "3 วัน", fn: () => { const d = new Date(); d.setDate(d.getDate() + 3); setDateText(`${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()} 23:59`); } },
-                    { label: "สัปดาห์หน้า", fn: () => { const d = new Date(); d.setDate(d.getDate() + 7); setDateText(`${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()} 23:59`); } },
+                    { label: "ตอนนี้+10นาที", fn: () => { setDateText(getDefaultDate()); } },
+                    { label: "1 ชม.", fn: () => { const d = new Date(); d.setHours(d.getHours() + 1); setDateText(formatDateForInput(d)); } },
+                    { label: "3 ชม.", fn: () => { const d = new Date(); d.setHours(d.getHours() + 3); setDateText(formatDateForInput(d)); } },
+                    { label: "พรุ่งนี้", fn: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); setDateText(formatDateForInput(d)); } },
+                    { label: "3 วัน", fn: () => { const d = new Date(); d.setDate(d.getDate() + 3); d.setHours(9, 0, 0, 0); setDateText(formatDateForInput(d)); } },
+                    { label: "สัปดาห์หน้า", fn: () => { const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(9, 0, 0, 0); setDateText(formatDateForInput(d)); } },
                   ].map((q) => (
                     <button
                       key={q.label}
@@ -316,7 +405,7 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
                         onClick={() => loadTemplate(t)}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px]">�</span>
+                          <span className="text-[10px]">📋</span>
                           <span className="truncate text-xs font-medium">{t.title}</span>
                         </div>
                         <div className="flex items-center gap-1.5">

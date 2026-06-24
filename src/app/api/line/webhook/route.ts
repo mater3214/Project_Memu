@@ -240,6 +240,13 @@ async function handleEvent(event: WebhookEvent) {
              await replyText(replyToken, "รูปแบบเวลาไม่ถูกต้อง กรุณากรอกใหม่ (เช่น 05/05/2026 14:30) หรือพิมพ์ ยกเลิก");
              return;
           }
+          // Validate: time must be >= now + 5 minutes
+          const dueTimeMs = new Date(dueDateISO).getTime();
+          const minTimeMs = Date.now() + 5 * 60 * 1000;
+          if (isNaN(dueTimeMs) || dueTimeMs < minTimeMs) {
+             await replyText(replyToken, "❌ เวลาย้อนหลังไม่ได้\nเวลาต้องมากกว่าเวลาปัจจุบันอย่างน้อย 5 นาที\nกรุณากรอกเวลาใหม่ หรือพิมพ์ ยกเลิก");
+             return;
+          }
           tempData.due_date = dueDateISO;
           await setLineState(lineUserId, "ADDING_DETAILS", tempData);
           await replyFlex(replyToken, "บันทึกเวลาแล้ว ต้องการเพิ่มข้อมูลอะไรอีกไหม?", detailsOptionsFlex());
@@ -370,6 +377,20 @@ async function handleEvent(event: WebhookEvent) {
         }
 
         const dueDateISO = todoDateText ? parseDateThai(todoDateText) : undefined;
+
+        // Validation: due_date is required for all todos
+        if (!dueDateISO) {
+          await replyTextWithQuickReply(replyToken, "❌ ทุกรายการต้องระบุวันเวลา\nกรุณาเพิ่มเวลาในรูปแบบ:\nเพิ่ม ชื่อ | รายละเอียด | สถานที่ | วว/ดด/ปปปป เวลา\n\nตัวอย่าง: เพิ่ม ทำงาน | ส่งไฟล์ | ออฟฟิศ | 25/06/2026 14:30", mainQuickReply());
+          break;
+        }
+
+        // Validation: time must be >= now + 5 minutes
+        const pipeDueTimeMs = new Date(dueDateISO).getTime();
+        const pipeMinTimeMs = Date.now() + 5 * 60 * 1000;
+        if (isNaN(pipeDueTimeMs) || pipeDueTimeMs < pipeMinTimeMs) {
+          await replyTextWithQuickReply(replyToken, "❌ เวลาย้อนหลังไม่ได้\nเวลาต้องมากกว่าเวลาปัจจุบันอย่างน้อย 5 นาที", mainQuickReply());
+          break;
+        }
 
         const todo = await createTodo({
           user_id: dbUser.id,

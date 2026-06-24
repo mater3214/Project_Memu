@@ -221,15 +221,17 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 
 export async function getUpcomingNotifications(): Promise<Todo[]> {
   const now = new Date();
-  const twentyFourHoursLater = new Date(now.getTime() + 24 * 60 * 60000);
+  // Notify todos that are due in 4-6 minutes from now (i.e., ~5 minutes before due_date)
+  const fourMinLater = new Date(now.getTime() + 4 * 60000);
+  const sixMinLater = new Date(now.getTime() + 6 * 60000);
 
   const { data, error } = await getAdmin()
     .from("todos")
     .select("*, users!inner(line_user_id)")
     .eq("status", "pending")
     .eq("is_notified", false)
-    .gte("due_date", now.toISOString())
-    .lte("due_date", twentyFourHoursLater.toISOString());
+    .gte("due_date", fourMinLater.toISOString())
+    .lte("due_date", sixMinLater.toISOString());
 
   if (error) {
     console.error("getUpcomingNotifications error:", error);
